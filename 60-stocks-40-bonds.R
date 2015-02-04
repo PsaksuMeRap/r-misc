@@ -1,6 +1,5 @@
-# Portfolio Analysis in R A 60/40 US Stock/Bond Portfolio capitalspectator.com
-
-# rebalancing analysis for 60/40 US stock/bond portfolio
+# Portfolio Analysis in R A 60/40 US Stock/Bond Portfolio
+# http://www.capitalspectator.com
 
 # load packages
 library("quantmod")
@@ -55,3 +54,56 @@ qqline(portfolio.rebal$returns, col = "red")
 chart.RollingPerformance(portfolios.2, width = 252, 
                          legend.loc = "bottomright", 
                          main = "Rolling 1yr % returns") 
+
+# create rolling correlations for 1yr windows (252 trading days) 
+#   vs. rebalanced portfolio
+spy.port.corr <- na.omit(runCor(x = portfolio.returns$spy, 
+                                y = portfolio.rebal$returns, 
+                                n = 252))
+agg.port.corr <- na.omit(runCor(x = portfolio.returns$agg, 
+                                y = portfolio.rebal$returns, 
+                                n = 252))
+
+# combine and label correlation data
+spy.agg.port.corr <- cbind(spy.port.corr, agg.port.corr)
+colnames(spy.agg.port.corr) <- c("spy", "agg")
+
+# create date file for plot
+dates <- index(spy.agg.port.corr)
+
+# plot correlation data
+matplot(dates, spy.agg.port.corr, type = "l", xaxt = "n", 
+        xlab = "", ylab = "", main = "Rolling 252-day correlations")
+axis.Date(side = 1, dates, format = "%b-%d-%Y")
+legend("bottomleft", c(colnames(spy.agg.port.corr)), fill = palette())
+
+# create volatility data
+spy.port.vol <- na.omit(runSD(x = portfolio.returns$spy, n = 252))
+agg.port.vol <- na.omit(runSD(x = portfolio.returns$agg, n = 252))
+port.vol <- na.omit(runSD(x = portfolio.rebal$returns, n = 252))
+
+# combine and label volatility data
+spy.agg.port.vol <- cbind(spy.port.vol, agg.port.vol, port.vol)
+colnames(spy.agg.port.vol) <- c("spy", "agg", "portfolio")
+
+# create dates file for plot
+dates <-index(spy.agg.port.vol)
+
+# plot correlation data
+matplot(dates, spy.agg.port.vol, type = "l", xaxt = "n", 
+        xlab = "", ylab = "", main="Rolling 252-day volatility (std dev)")
+axis.Date(side = 1, dates, format = "%b-%d-%Y")
+legend("topleft", c(colnames(spy.agg.port.vol)), fill = palette())
+
+
+# review the weights for each asset
+tail(portfolio.rebal$EOP.Weight)
+
+# review the weighted return contribution for each asset
+tail(portfolio.rebal$contribution)
+
+# review portfolio returns, the sum of weighted returns for the assets
+tail(portfolio.rebal$returns)
+
+# verify portfolio returns by summing weighted returns for the assets
+tail(as.xts(apply(portfolio.rebal$contribution, 1, sum)))
